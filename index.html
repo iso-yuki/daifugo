@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大富豪ゲーム</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game-board">
+        <!-- Player 2 Area -->
+        <div id="player2-area" class="player-area">
+            <div class="player-content">
+                <!-- Player 2 Hand and Card Count -->
+                <div class="player-hand">
+                    <div id="player2-hand" class="hand"></div>
+                    <div id="player2-info">
+                        <div id="player2-card-count-info" class="card-count"> Card Count: <span id="player2-card-count">0</span></div>
+                    </div>
+                </div>
+                <!-- Player 2 Buttons -->
+                <div class="player-buttons">
+                    <button id="player2-play-button">Play</button>
+                    <button id="player2-pass-button">Pass</button>
+                    <button id="player2-sort-button">Sort</button>
+                    <button id="player2-select-button">Select</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Play Area -->
+        <div id="play-area">
+            <div class="play-content">
+                <!-- Played Cards Display -->
+                <div id="played-card"></div>
+                <div id="restriction" class="suitContainer"></div>
+                <div id="restriction-count"></div>
+                <!-- Turn Info and Deck/Trash Count -->
+                <div id="info">
+                    <div id="deck"></div>
+                    <div id="trash"></div>
+                    <div id="turn-info">Turn Information</div>
+                    <div id="deck-info">Deck: <span id="deck-count">0</span></div>
+                    <div id="trash-info">Trash: <span id="trash-count">0</span></div>
+                    <div id="played-card-info">Played Cards: <span id="played-card-count">0</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Player 1 Area -->
+        <div id="player1-area" class="player-area">
+            <div class="player-content">
+                <!-- Player 1 Hand and Card Count -->
+                <div class="player-hand">
+                    <div id="player1-hand" class="hand"></div>
+                    <div id="player1-info">
+                        <div id="player1-card-count-info" class="card-count"> Card Count: <span id="player1-card-count">0</span></div>
+                    </div>
+                </div>
+                <!-- Player 1 Buttons -->
+                <div class="player-buttons">
+                    <button id="player1-play-button">Play</button>
+                    <button id="player1-pass-button">Pass</button>
+                    <button id="player1-sort-button">Sort</button>
+                    <button id="player1-select-button">Select</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="card.js" type="module"></script>
+    <script src="play.js" type="module"></script>
+    <script src="cardEffect.js" type="module"></script>
+    <script src="player.js" type="module"></script>
+    <script src="playArea.js" type="module"></script>
+    <script src="gamemaster.js" type="module"></script>
+</body>
+</html>
