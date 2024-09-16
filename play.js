@@ -175,10 +175,10 @@ export class PlayValidator {
             }
         } 
     
-        const firstNumber = cards.find(card => card.Suit !== 'joker').Number; // 最初のジョーカー以外のカードの番号を取得
+        const firstNumber = cards.find(card => card.suit !== 'joker').number; // 最初のジョーカー以外のカードの番号を取得
     
         // ジョーカーは他のカードと同じランクとみなす
-        return cards.every(card => card.Number === firstNumber || card.Suit === 'joker');
+        return cards.every(card => card.number === firstNumber || card.suit === 'joker');
     }
 
     // カードのスートと連番でプレイタイプを判定
@@ -188,7 +188,7 @@ export class PlayValidator {
         }
 
         // 最初のジョーカー以外のカードを基準にする
-        const suit = cards[0].Suit;
+        const suit = cards[0].suit;
         const order = {
             '3': 1, '4': 2, '5': 3, '6': 4, '7': 5, '8': 6, '9': 7, '10': 8, '11': 9, '12': 10, '13': 11, '1': 12, '2': 13, 'joker': 14
         };
@@ -198,11 +198,11 @@ export class PlayValidator {
             const nextCard = cards[i + 1];
 
             // スートが一致しているかの判定
-            if (currentCard.Suit !== suit || nextCard.Suit !== suit) return false;
+            if (currentCard.suit !== suit || nextCard.suit !== suit) return false;
             
             // 連番の判定
-            const currentOrder = order[currentCard.Number];
-            const nextOrder = order[nextCard.Number];
+            const currentOrder = order[currentCard.number];
+            const nextOrder = order[nextCard.number];
             const gap = nextOrder - currentOrder - 1;
 
             if (gap > 0) {
@@ -230,8 +230,8 @@ export class PlayValidator {
 
         // 各カードのスートと数字を確認
         for (const card of cards) {
-            suits.add(card.Suit); // スートを追加
-            ranks.push(card.Number); // 数字を追加
+            suits.add(card.suit); // スートを追加
+            ranks.push(card.number); // 数字を追加
             }
 
         // スートが4つ（ジョーカーが補完している場合も含む）かどうかを確認
@@ -268,7 +268,7 @@ export class PlayValidator {
         if (jokerCount>=1) return true; // ジョーカーがあれば14
 
         // カードの数字の合計が14かどうかを確認
-        const sum = cards.reduce((acc, card) => acc + card.Number, 0);
+        const sum = cards.reduce((acc, card) => acc + card.number, 0);
         return sum === 14;
     }
 
@@ -278,9 +278,9 @@ export class PlayValidator {
             return new PlayType([PLAY_TYPES_LIST.CANNOT], null, this.cards.length, false, [], []);
         }
         const playTypes = [];
-        const minCardNumber = this.cards[0].Number;
-        const jokerCount = this.cards.filter(card => card.Suit === 'joker').length;
-        const nonJokerCards = this.cards.filter(card => card.Suit !== 'joker');
+        const minCardNumber = this.cards[0].number;
+        const jokerCount = this.cards.filter(card => card.suit === 'joker').length;
+        const nonJokerCards = this.cards.filter(card => card.suit !== 'joker');
 
 
 
@@ -308,7 +308,7 @@ export class PlayValidator {
             return new PlayType([PLAY_TYPES_LIST.CANNOT], null, this.cards.length, false, [], []);
         }
         // スートを取得(jokerは含めない)
-        const suits = this.cards.map(card => card.Suit);
+        const suits = this.cards.map(card => card.suit);
         console.log("suits are " + suits)
         return new PlayType(playTypes, minCardNumber, this.cards.length, false, [], suits);
     }

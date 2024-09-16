@@ -6,16 +6,18 @@ const Suit = {
     joker: 'joker',
 };
 
+const order = {'3': 1, '4': 2, '5': 3, '6': 4, '7': 5, '8': 6, '9': 7, '10': 8, '11': 9, '12': 10, '13': 11, '1': 12, '2': 13, '14': 14};
+
 export class Card {
-    constructor(suit, number, parentElement, index, offsetX) {
+    constructor(suit, number, parentElement) {
         this.X = 0;
         this.Y = 0;
-        this.Number = number; // カードのランク
-        this.Suit = suit;     // カードのスート
-
+        this.number = number; // カードの数字
+        this.rank = order[number];
+        this.suit = suit;     // カードのスート
+        
 
         this.parentElement = parentElement;
-        this.OffsetX = offsetX; // カードの重なりを調整するX方向のオフセット
 
         // カードの位置を設定
         // this.X = index * this.OffsetX;
@@ -99,19 +101,19 @@ export class Cards {
 
         // カードをソートする
         this.Cards.sort((a, b) => {
-            if (a.Suit === Suit.joker && b.Suit !== Suit.joker) {
+            if (a.suit === Suit.joker && b.suit !== Suit.joker) {
                 return 1; // joker は最後に来る
             }
-            if (b.Suit === Suit.joker && a.Suit !== Suit.joker) {
+            if (b.suit === Suit.joker && a.suit !== Suit.joker) {
                 return -1;
             }
 
             // ソートの順序に従って比較
-            if (a.Number === b.Number) {
-                return suitOrder[a.Suit] - suitOrder[b.Suit];
+            if (a.number === b.number) {
+                return suitOrder[a.suit] - suitOrder[b.suit];
             }
 
-            return order[a.Number] - order[b.Number];
+            return order[a.number] - order[b.number];
         });
 
         // カードの位置を更新
@@ -286,19 +288,19 @@ export class Hand extends Cards {
 
         // 選択されたカードをソート
         selectedCards.sort((a, b) => {
-            if (a.Suit === Suit.joker && b.Suit !== Suit.joker) {
+            if (a.suit === Suit.joker && b.suit !== Suit.joker) {
                 return 1; // joker は最後に来る
             }
-            if (b.Suit === Suit.joker && a.Suit !== Suit.joker) {
+            if (b.suit === Suit.joker && a.suit !== Suit.joker) {
                 return -1;
             }
 
             // 数字で比較
-            if (a.Number === b.Number) {
-                return suitOrder[a.Suit] - suitOrder[b.Suit];
+            if (a.number === b.number) {
+                return suitOrder[a.suit] - suitOrder[b.suit];
             }
             
-            return order[a.Number] - order[b.Number];
+            return order[a.number] - order[b.number];
         });
         return selectedCards;
     }

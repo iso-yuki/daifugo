@@ -28,15 +28,15 @@ export class CardEffectManager {
         const pendingEffectCards = this.gameMaster.playArea.playedCard.getPendingEffectCards();
     
         for (const card of pendingEffectCards) {
-            const effect = this.effectMap[card.Number];
-            if (effect && !appliedEffects.has(card.Number)) {
-                this.gameMaster.playArea.turnInfoElement.textContent = `Player ${this.gameMaster.playArea.playState.turnPlayerId}'s turn: ${card.Number} effect selecting...`;
+            const effect = this.effectMap[card.number];
+            if (effect && !appliedEffects.has(card.number)) {
+                this.gameMaster.playArea.turnInfoElement.textContent = `Player ${this.gameMaster.playArea.playState.turnPlayerId}'s turn: ${card.number} effect selecting...`;
                 this.gameMaster.playArea.playState.currentPlayerStatus = 'selecting';
                 this.gameMaster.player[this.gameMaster.playArea.playState.turnPlayerId].status = 'selecting';
                 // 効果がまだ発動していない場合のみ適用
                 await effect.applyEffect();
                 // 効果が発動済みとして記録
-                appliedEffects.add(card.Number);
+                appliedEffects.add(card.number);
                 this.gameMaster.playArea.playState.currentPlayerStatus = 'waiting';
                 this.gameMaster.player[this.gameMaster.playArea.playState.turnPlayerId].status = 'waiting';
             }
@@ -59,7 +59,7 @@ class CardEffect {
 
 class ThreeEffect extends CardEffect {
     async applyEffect( ) {
-        const numberOfThrees = this.Cards.filter(card => card.Number === 3).length;
+        const numberOfThrees = this.Cards.filter(card => card.number === 3).length;
 
         if (numberOfThrees > 0) {
             for (let i = 0; i < numberOfThrees; i++) {
@@ -71,7 +71,7 @@ class ThreeEffect extends CardEffect {
 
 class FourEffect extends CardEffect {
     async applyEffect( ) {
-        const numberOfFours = this.Cards.filter(card => card.Number === 4).length;
+        const numberOfFours = this.Cards.filter(card => card.number === 4).length;
 
         if (numberOfFours > 0) {
             for (let i = 0; i < numberOfFours; i++) {
@@ -83,7 +83,7 @@ class FourEffect extends CardEffect {
 
 class FiveEffect extends CardEffect {
     async applyEffect( ) {
-        const numberOfFives = this.Cards.filter(card => card.Number === 5).length;
+        const numberOfFives = this.Cards.filter(card => card.number === 5).length;
 
         if (numberOfFives > 0) {
             for (let i = 0; i < numberOfFives; i++) {
@@ -95,7 +95,7 @@ class FiveEffect extends CardEffect {
 
 class SixEffect extends CardEffect {
     async applyEffect() {
-        const numberOfSixes = this.Cards.filter(card => card.Number === 6).length;
+        const numberOfSixes = this.Cards.filter(card => card.number === 6).length;
 
         if (numberOfSixes > 0) {
             // 相手の手札に追加する
@@ -134,7 +134,7 @@ class SevenEffect extends CardEffect {
     }
 
     async applyEffect() {
-        const numberOfSevens = this.Cards.filter(card => card.Number === 7).length;
+        const numberOfSevens = this.Cards.filter(card => card.number === 7).length;
 
         if (numberOfSevens > 0) {
             // 自分の手札を取得
@@ -170,7 +170,7 @@ class SevenEffect extends CardEffect {
 
 class EightEffect extends CardEffect {
     async applyEffect() {
-        const numberOfEights = this.Cards.filter(card => card.Number === 8).length;
+        const numberOfEights = this.Cards.filter(card => card.number === 8).length;
 
         if (numberOfEights > 0) {
             for (let i = 0; i < numberOfEights; i++) {
@@ -182,7 +182,7 @@ class EightEffect extends CardEffect {
 
 class NineEffect extends CardEffect {
     async applyEffect() {
-        const numberOfNines = this.Cards.filter(card => card.Number === 9).length;
+        const numberOfNines = this.Cards.filter(card => card.number === 9).length;
 
         if (numberOfNines > 0) {
             // 自分の手札からランダムに選び相手の手札に加える
@@ -222,7 +222,7 @@ class TenEffect extends CardEffect {
     }
 
     async applyEffect() {
-        const numberOfTens = this.Cards.filter(card => card.Number === 10).length;
+        const numberOfTens = this.Cards.filter(card => card.number === 10).length;
 
         if (numberOfTens > 0) {
             // 自分の手札を取得
@@ -255,7 +255,7 @@ class TenEffect extends CardEffect {
 
 class ElevenEffect extends CardEffect {
     async applyEffect() {
-        const numberOfElevens = this.Cards.filter(card => card.Number === 11).length;
+        const numberOfElevens = this.Cards.filter(card => card.number === 11).length;
 
         if (numberOfElevens > 0) {
             for (let i = 0; i < numberOfElevens; i++) {
@@ -267,7 +267,7 @@ class ElevenEffect extends CardEffect {
 
 class TwelveEffect extends CardEffect {
     async applyEffect() {
-        const numberOfTwelves = this.Cards.filter(card => card.Number === 12).length;
+        const numberOfTwelves = this.Cards.filter(card => card.number === 12).length;
 
         if (numberOfTwelves > 0) {
             for (let i = 0; i < numberOfTwelves; i++) {
@@ -279,7 +279,7 @@ class TwelveEffect extends CardEffect {
 
 class ThirteenEffect extends CardEffect {
     async applyEffect() {
-        const numberOfThirteens = this.Cards.filter(card => card.Number === 13).length;
+        const numberOfThirteens = this.Cards.filter(card => card.number === 13).length;
 
         if (numberOfThirteens > 0) {
             for (let i = 0; i < numberOfThirteens; i++) {
@@ -291,7 +291,7 @@ class ThirteenEffect extends CardEffect {
 
 class OneEffect extends CardEffect {
     async applyEffect() {
-        const numberOfOnes = this.Cards.filter(card => card.Number === 1).length;
+        const numberOfOnes = this.Cards.filter(card => card.number === 1).length;
 
         if (numberOfOnes > 0) {
             for (let i = 0; i < numberOfOnes; i++) {
@@ -303,7 +303,7 @@ class OneEffect extends CardEffect {
 
 class TwoEffect extends CardEffect {
     async applyEffect() {
-        const numberOfTwos = this.Cards.filter(card => card.Number === 2).length;
+        const numberOfTwos = this.Cards.filter(card => card.number === 2).length;
 
         if (numberOfTwos > 0) {
             const playerHand = this.gameMaster.player[this.playerId].hand;
@@ -327,7 +327,7 @@ class TwoEffect extends CardEffect {
 
 class JokerEffect extends CardEffect {
     async applyEffect() {
-        const numberOfJokers = this.Cards.filter(card => card.Number === 14).length;
+        const numberOfJokers = this.Cards.filter(card => card.number === 14).length;
 
         if (numberOfJokers > 0) {
             for (let i = 0; i < numberOfJokers; i++) {
