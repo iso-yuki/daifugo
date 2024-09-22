@@ -5,20 +5,23 @@ const Suit = {
     Spade: 'spade',
     joker: 'joker',
 };
+const order = {
+    '3': 1, '4': 2, '5': 3, '6': 4, '7': 5, '8': 6, '9': 7, '10': 8, '11': 9, '12': 10, '13': 11, '1': 12, '2': 13, '14': 14
+};
+// スートの順序を定義
+const suitOrder = {
+    'club': 1, 'diamond': 2, 'heart': 3, 'spade': 4
+};
 
 export class Card {
-    constructor(suit, number, parentElement, index, offsetX) {
+    constructor(suit, number, parentElement) {
         this.X = 0;
         this.Y = 0;
-        this.Number = number; // カードのランク
-        this.Suit = suit;     // カードのスート
-
+        this.number = number; // カードのランク
+        this.suit = suit;     // カードのスート
+        this.order = order[number]; // カードの順位
 
         this.parentElement = parentElement;
-        this.OffsetX = offsetX; // カードの重なりを調整するX方向のオフセット
-
-        // カードの位置を設定
-        // this.X = index * this.OffsetX;
 
         this.element = document.createElement('div');
         this.element.style.position = 'absolute';
@@ -87,31 +90,21 @@ export class Cards {
 
     // カードをソートするメソッド
     sortCards() {
-        // ソートの順序を定義
-        const order = {
-            '3': 1, '4': 2, '5': 3, '6': 4, '7': 5, '8': 6, '9': 7, '10': 8, '11': 9, '12': 10, '13': 11, '1': 12, '2': 13, 'joker': 14
-        };
-
-        // スートの順序を定義
-        const suitOrder = {
-            'club': 1, 'diamond': 2, 'heart': 3, 'spade': 4
-        };
-
         // カードをソートする
         this.Cards.sort((a, b) => {
-            if (a.Suit === Suit.joker && b.Suit !== Suit.joker) {
+            if (a.suit === Suit.joker && b.suit !== Suit.joker) {
                 return 1; // joker は最後に来る
             }
-            if (b.Suit === Suit.joker && a.Suit !== Suit.joker) {
+            if (b.suit === Suit.joker && a.suit !== Suit.joker) {
                 return -1;
             }
 
             // ソートの順序に従って比較
-            if (a.Number === b.Number) {
-                return suitOrder[a.Suit] - suitOrder[b.Suit];
+            if (a.number === b.number) {
+                return suitOrder[a.suit] - suitOrder[b.suit];
             }
 
-            return order[a.Number] - order[b.Number];
+            return a.order - b.order;
         });
 
         // カードの位置を更新
@@ -122,11 +115,8 @@ export class Cards {
             card.element.classList.remove('selected');
         });
     }
-    compareCardNumbers(number1, number2) {
-        const order = {
-            '3': 1, '4': 2, '5': 3, '6': 4, '7': 5, '8': 6, '9': 7, '10': 8, '11': 9, '12': 10, '13': 11, '1': 12, '2': 13, 'joker': 14
-        };
 
+    compareCardNumbers(number1, number2) {
         const rank1 = order[number1];
         const rank2 = order[number2];
 
@@ -230,12 +220,9 @@ export class Hand extends Cards {
     updateCardVisual() {
         const handWidth = this.parentElement.clientWidth;
         if (this.Cards.length === 0) {
-            console.log("cardlength: " + this.Cards.length);
             return;
         }
         const cardWidth = parseInt(getComputedStyle(this.Cards[0].element).width);
-        console.log("handWidth: " + handWidth);
-        console.log("cardWidth: " + cardWidth);
         const cardCount = this.Cards.length;
         const minShowWidth = cardWidth - 10;
         let showWidth = 0;
@@ -276,45 +263,37 @@ export class Hand extends Cards {
         // 選択されたカードをフィルタリング
         const selectedCards = this.Cards.filter(card => card.element.classList.contains('selected'));
         
-        // ソートの順序を定義
-        const order = {
-            '3': 1, '4': 2, '5': 3, '6': 4, '7': 5, '8': 6, '9': 7, '10': 8, '11': 9, '12': 10, '13': 11, '1': 12, '2': 13, 'joker': 14
-        };
-        const suitOrder = {
-            'club': 1, 'diamond': 2, 'heart': 3, 'spade': 4
-        };
-
         // 選択されたカードをソート
         selectedCards.sort((a, b) => {
-            if (a.Suit === Suit.joker && b.Suit !== Suit.joker) {
+            if (a.suit === Suit.joker && b.suit !== Suit.joker) {
                 return 1; // joker は最後に来る
             }
-            if (b.Suit === Suit.joker && a.Suit !== Suit.joker) {
+            if (b.suit === Suit.joker && a.suit !== Suit.joker) {
                 return -1;
             }
 
             // 数字で比較
-            if (a.Number === b.Number) {
-                return suitOrder[a.Suit] - suitOrder[b.Suit];
+            if (a.number === b.number) {
+                return suitOrder[a.suit] - suitOrder[b.suit];
             }
             
-            return order[a.Number] - order[b.Number];
+            return order[a.number] - order[b.number];
         });
         return selectedCards;
     }
 
     // 選択されたカードをプレイエリアに移動させるメソッド
-    playSelectedCards(gameMaster, playedCard) {
+    playSelectedCards(gameMaster) {
         const selectedCards = this.getSelectedCards();
         selectedCards.forEach(card => {
             if (card.parentElement === this.parentElement) {
                 this.removeCard(card); // 手札から削除
-                playedCard.addCard(card); // プレイエリアに追加
+                gameMaster.playArea.playedCard.addCard(card); // プレイエリアに追加
                 card.element.classList.remove('selected');
                 card.element.classList.add('pendingEffect');
             }
         });
-        playedCard.updateCardVisual();
+        gameMaster.playArea.playedCard.updateCardVisual();
         this.updateCardVisual();
         gameMaster.updateAllCounts();
 
@@ -349,25 +328,4 @@ export class Trash extends Cards {
         this.parentElement = parentElement;
     }
 
-}
-
-export class RestrictionSuits extends Cards{
-    constructor(parentElement, countElement) {
-        super(parentElement, countElement);
-        this.parentElement = parentElement;
-    }
-
-    // カードをすべて削除するメソッド
-    clearCards() {
-        this.Cards.forEach(card => {
-            this.removeCard(card);
-        });
-    }
-
-    updateCardVisual(){
-        this.Cards.forEach((card,index) => {
-            card.Move(0,index * 40);
-            card.element.style.zIndex = index;
-        });
-    }
 }

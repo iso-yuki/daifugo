@@ -25,21 +25,42 @@ export class CardEffectManager {
     async applyEffect() {
         // 効果が発動済みの数字を記録するセット
         const appliedEffects = new Set();
-        const pendingEffectCards = this.gameMaster.playArea.playedCard.getPendingEffectCards();
+        const pendingEffectCards = this.gameMaster.playArea.playState.previousPlayed.cards;
     
         for (const card of pendingEffectCards) {
-            const effect = this.effectMap[card.Number];
-            if (effect && !appliedEffects.has(card.Number)) {
-                this.gameMaster.playArea.turnInfoElement.textContent = `Player ${this.gameMaster.playArea.playState.turnPlayerId}'s turn: ${card.Number} effect selecting...`;
+            const effect = this.effectMap[card.number];
+            if (effect && !appliedEffects.has(card.number)) {
+                this.gameMaster.playArea.turnInfoElement.textContent = `Player ${this.gameMaster.playArea.playState.turnPlayerId}'s turn: ${card.number} effect selecting...`;
                 this.gameMaster.playArea.playState.currentPlayerStatus = 'selecting';
                 this.gameMaster.player[this.gameMaster.playArea.playState.turnPlayerId].status = 'selecting';
                 // 効果がまだ発動していない場合のみ適用
                 await effect.applyEffect();
                 // 効果が発動済みとして記録
-                appliedEffects.add(card.Number);
+                appliedEffects.add(card.number);
                 this.gameMaster.playArea.playState.currentPlayerStatus = 'waiting';
                 this.gameMaster.player[this.gameMaster.playArea.playState.turnPlayerId].status = 'waiting';
             }
+        }
+    }
+
+    async applyCombinationEffect() {
+        // プレイしたカードの枚数が３枚の時のみ効果を適用
+        if (this.gameMaster.playArea.playState.previousPlayed.cards.length === 3) {
+            this.gameMaster.playArea.turnInfoElement.textContent = `Player ${this.gameMaster.playArea.playState.turnPlayerId}'s turn: three combination effect selecting...`;
+            const effect = new ThreeCombination(this.gameMaster);
+            await effect.applyEffect();
+        }
+        // プレイしたカードの枚数が４枚の時のみ効果を適用
+        if (this.gameMaster.playArea.playState.previousPlayed.cards.length === 4) {
+            this.gameMaster.playArea.turnInfoElement.textContent = `Player ${this.gameMaster.playArea.playState.turnPlayerId}'s turn: four combination effect selecting...`;
+            const effect = new FourCombination(this.gameMaster);
+            await effect.applyEffect();
+        }
+        // プレイしたカードの枚数が５枚以上かつplayTypeがTwentyでないときのみ効果を適用
+        if (this.gameMaster.playArea.playState.previousPlayed.cards.length >= 5 && this.gameMaster.playArea.playState.previousPlayed.playType !== 'Twenty') {
+            this.gameMaster.playArea.turnInfoElement.textContent = `Player ${this.gameMaster.playArea.playState.turnPlayerId}'s turn: over four combination effect selecting...`;
+            const effect = new FiveCombination(this.gameMaster);
+            await effect.applyEffect();
         }
     }
 }
@@ -59,7 +80,7 @@ class CardEffect {
 
 class ThreeEffect extends CardEffect {
     async applyEffect( ) {
-        const numberOfThrees = this.Cards.filter(card => card.Number === 3).length;
+        const numberOfThrees = this.Cards.filter(card => card.number === 3).length;
 
         if (numberOfThrees > 0) {
             for (let i = 0; i < numberOfThrees; i++) {
@@ -71,7 +92,7 @@ class ThreeEffect extends CardEffect {
 
 class FourEffect extends CardEffect {
     async applyEffect( ) {
-        const numberOfFours = this.Cards.filter(card => card.Number === 4).length;
+        const numberOfFours = this.Cards.filter(card => card.number === 4).length;
 
         if (numberOfFours > 0) {
             for (let i = 0; i < numberOfFours; i++) {
@@ -83,7 +104,7 @@ class FourEffect extends CardEffect {
 
 class FiveEffect extends CardEffect {
     async applyEffect( ) {
-        const numberOfFives = this.Cards.filter(card => card.Number === 5).length;
+        const numberOfFives = this.Cards.filter(card => card.number === 5).length;
 
         if (numberOfFives > 0) {
             for (let i = 0; i < numberOfFives; i++) {
@@ -95,12 +116,12 @@ class FiveEffect extends CardEffect {
 
 class SixEffect extends CardEffect {
     async applyEffect() {
-        const numberOfSixes = this.Cards.filter(card => card.Number === 6).length;
+        const numberOfSixes = this.Cards.filter(card => card.number === 6).length;
 
         if (numberOfSixes > 0) {
             // 相手の手札に追加する
             const opponentId = this.playerId === 1 ? 2 : 1;
-            const opponentHand = this.gameMaster.getPlayerHand(opponentId);
+            const opponentHand = this.gameMaster.player[opponentId].hand;
             const drawnCard = this.gameMaster.playArea.deck.deal(numberOfSixes);
             if (drawnCard) {
                 drawnCard.forEach(card =>{
@@ -134,7 +155,7 @@ class SevenEffect extends CardEffect {
     }
 
     async applyEffect() {
-        const numberOfSevens = this.Cards.filter(card => card.Number === 7).length;
+        const numberOfSevens = this.Cards.filter(card => card.number === 7).length;
 
         if (numberOfSevens > 0) {
             // 自分の手札を取得
@@ -170,19 +191,18 @@ class SevenEffect extends CardEffect {
 
 class EightEffect extends CardEffect {
     async applyEffect() {
-        const numberOfEights = this.Cards.filter(card => card.Number === 8).length;
+        const numberOfEights = this.Cards.filter(card => card.number === 8).length;
 
         if (numberOfEights > 0) {
-            for (let i = 0; i < numberOfEights; i++) {
-                console.log("8の効果が発動しました。");
-            }
+            this.gameMaster.playArea.playEffectRule.eightActivated = true;
+            console.log("8の効果が発動しました。");
         }
     }
 }
 
 class NineEffect extends CardEffect {
     async applyEffect() {
-        const numberOfNines = this.Cards.filter(card => card.Number === 9).length;
+        const numberOfNines = this.Cards.filter(card => card.number === 9).length;
 
         if (numberOfNines > 0) {
             // 自分の手札からランダムに選び相手の手札に加える
@@ -222,7 +242,7 @@ class TenEffect extends CardEffect {
     }
 
     async applyEffect() {
-        const numberOfTens = this.Cards.filter(card => card.Number === 10).length;
+        const numberOfTens = this.Cards.filter(card => card.number === 10).length;
 
         if (numberOfTens > 0) {
             // 自分の手札を取得
@@ -255,19 +275,19 @@ class TenEffect extends CardEffect {
 
 class ElevenEffect extends CardEffect {
     async applyEffect() {
-        const numberOfElevens = this.Cards.filter(card => card.Number === 11).length;
+        const numberOfElevens = this.Cards.filter(card => card.number === 11).length;
 
         if (numberOfElevens > 0) {
-            for (let i = 0; i < numberOfElevens; i++) {
-                console.log("11の効果が発動しました。");
-            }
+            this.gameMaster.playArea.playEffectRule.elevenActivated = !this.gameMaster.playArea.playEffectRule.elevenActivated;
+            this.gameMaster.playArea.playEffectRule.setReverseStrength();
+            console.log("11の効果が発動しました。");
         }
     }
 }
 
 class TwelveEffect extends CardEffect {
     async applyEffect() {
-        const numberOfTwelves = this.Cards.filter(card => card.Number === 12).length;
+        const numberOfTwelves = this.Cards.filter(card => card.number === 12).length;
 
         if (numberOfTwelves > 0) {
             for (let i = 0; i < numberOfTwelves; i++) {
@@ -279,7 +299,7 @@ class TwelveEffect extends CardEffect {
 
 class ThirteenEffect extends CardEffect {
     async applyEffect() {
-        const numberOfThirteens = this.Cards.filter(card => card.Number === 13).length;
+        const numberOfThirteens = this.Cards.filter(card => card.number === 13).length;
 
         if (numberOfThirteens > 0) {
             for (let i = 0; i < numberOfThirteens; i++) {
@@ -291,7 +311,7 @@ class ThirteenEffect extends CardEffect {
 
 class OneEffect extends CardEffect {
     async applyEffect() {
-        const numberOfOnes = this.Cards.filter(card => card.Number === 1).length;
+        const numberOfOnes = this.Cards.filter(card => card.number === 1).length;
 
         if (numberOfOnes > 0) {
             for (let i = 0; i < numberOfOnes; i++) {
@@ -303,7 +323,7 @@ class OneEffect extends CardEffect {
 
 class TwoEffect extends CardEffect {
     async applyEffect() {
-        const numberOfTwos = this.Cards.filter(card => card.Number === 2).length;
+        const numberOfTwos = this.Cards.filter(card => card.number === 2).length;
 
         if (numberOfTwos > 0) {
             const playerHand = this.gameMaster.player[this.playerId].hand;
@@ -327,12 +347,73 @@ class TwoEffect extends CardEffect {
 
 class JokerEffect extends CardEffect {
     async applyEffect() {
-        const numberOfJokers = this.Cards.filter(card => card.Number === 14).length;
+        const numberOfJokers = this.Cards.filter(card => card.number === 14).length;
 
         if (numberOfJokers > 0) {
             for (let i = 0; i < numberOfJokers; i++) {
                 console.log("ジョーカーの効果が発動しました。");
             }
         }
+    }
+}
+
+class ThreeCombination extends CardEffect {
+    async waitForPlayerSelection(player) {
+        return new Promise((resolve) => {
+            const selectButton = player.selectButton;
+            const onClick = () => {
+                const selectedCards = player.hand.getSelectedCards();
+                if (selectedCards.length > 1) {
+                    alert(`選択されたカードが多すぎます。最大で1枚選択してください。`);
+                } else {
+                    selectButton.removeEventListener('click', onClick);
+                    resolve(selectedCards);
+                }
+            };
+            selectButton.addEventListener('click', onClick);
+        });
+    }
+
+    async applyEffect() {
+        // 自分の手札を取得
+        const player = this.gameMaster.player[this.playerId];
+        const trash = this.gameMaster.playArea.trash;
+
+        // プレイヤーがカードを選択してSelectボタンを押すまで待機
+        const selectedCards = await this.waitForPlayerSelection(player);
+
+        if (selectedCards.length === 0) {
+            console.log("カードが選択されていません。効果は発動されません。");
+            return;
+        }
+
+        // 選択されたカードを捨て札に移動
+        selectedCards.forEach(card => {
+            card.element.classList.remove('selected');
+            player.hand.removeCard(card);
+            trash.addCard(card);
+            player.hand.sortCards();
+        });
+
+        // 手札の枚数表示を更新
+        this.gameMaster.updateAllCounts();
+
+        console.log("3枚組の効果が発動しました。");
+    
+    }
+}
+
+class FourCombination extends CardEffect {
+    async applyEffect() {
+        this.gameMaster.playArea.playEffectRule.toggleRevolution();
+        console.log("4枚組の効果が発動しました。");
+    }
+}
+
+class FiveCombination extends CardEffect {
+    async applyEffect() {
+        this.gameMaster.playArea.playEffectRule.toggleRevolution();
+        this.gameMaster.playArea.playEffectRule.toggleSuperRevolution();
+        console.log("5枚組の効果が発動しました。");
     }
 }

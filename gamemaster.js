@@ -15,37 +15,41 @@ class GameMaster {
 
     //各プレイヤーにカードを配るメソッド
     dealCards() {
-        const player1Cards = this.playArea.deck.deal(15);
+        const player1Cards = this.playArea.deck.deal(20);
         player1Cards.forEach(card => this.player[1].hand.addCard(card));
         this.player[1].hand.sortCards();
 
-        const player2Cards = this.playArea.deck.deal(15);
+        const player2Cards = this.playArea.deck.deal(20);
         player2Cards.forEach(card => this.player[2].hand.addCard(card));
         this.player[2].hand.sortCards();
     }
 
     //ボタンを初期化するメソッド
     setupButtons() {
-        //　各プレイヤーの各ボンタンにfor eachでイベントリスナーを追加
+        //　各プレイヤーの各ボタンにfor eachでイベントリスナーを追加
         Object.values(this.player).forEach(player => {
+            // Playボタンを押した時の処理
             player.playButton.addEventListener('click', () => {
                 if (player.isTurnPlayer && player.status === 'playing') {
-                    handlePlay(player.playerId,this);
+                    handlePlay(this);
                 } else {
                     console.log("now state is " + player.status);
                 }
             });
+            // Passボタンを押した時の処理
             player.passButton.addEventListener('click', () => {
-                // プレイヤーがぱすできるかどうかを確認
+                // プレイヤーがパスできるかどうかを確認
                 if (player.isTurnPlayer === true && player.status === 'playing') {
                     this.handlePass(player.playerId);
                 } else {
                     console.log("now state is " + player.status + " and isTurnPlayer is " + player.isTurnPlayer);
                 }
             });
+            // Sortボタンを押した時の処理
             player.sortButton.addEventListener('click', () => {
                 player.hand.sortCards();
             });
+            // Selectボタンを押した時の処理
             // player.selectButton.addEventListener('click', () => {
             //     handleSelect();
             // });
@@ -57,13 +61,9 @@ class GameMaster {
     handlePass(playerId) {
         console.log(`player${playerId} has passed.`);
         this.updateTurn();
-        this.playArea.playState.previousPlayType.resetPlayType();
+        this.playArea.playEffectRule.reset();
+        this.playArea.playState.previousPlayed.setup();
         this.playArea.clearPlayedCard();
-    }
-
-    // プレイヤーの手札を取得するメソッド
-    getPlayerHand(playerId) {
-        return this.player[playerId].hand;
     }
 
     // 全てのカードの枚数を更新するメソッド
@@ -77,6 +77,16 @@ class GameMaster {
 
     // ターン情報を更新するメソッド
     updateTurn() {
+        if (this.playArea.playEffectRule.eightActivated){
+            this.playArea.playState.updateTurnCount();
+            this.playArea.updateTurnInfo(`player${this.playArea.playState.turnPlayerId}'s turn`);
+            this.playArea.playState.currentPlayerStatus = 'playing';
+            this.player[this.playArea.playState.turnPlayerId].status = 'playing';
+            this.playArea.playEffectRule.reset();
+            this.playArea.playState.previousPlayed.setup();
+            this.playArea.clearPlayedCard();
+            return;
+        }
         this.playArea.playState.updateTurnPlayer();
         this.playArea.playState.updateTurnCount();
         this.playArea.updateTurnInfo(`player${this.playArea.playState.turnPlayerId}'s turn`);
@@ -92,10 +102,6 @@ class GameMaster {
         this.player[this.playArea.playState.turnPlayerId].status = 'playing';
     }
 
-    // ターンプレイヤーを取得するメソッド
-    getTurnPlayerId() {
-        return this.turnPlayerId;
-    }
     updatePassButtonVisibility() {
         const player1PassButton = document.getElementById('player1-pass-button');
         const player2PassButton = document.getElementById('player2-pass-button');

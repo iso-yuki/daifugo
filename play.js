@@ -1,227 +1,401 @@
-import { CardEffectManager } from './cardEffect.js';
-import { Card } from './card.js';
-// import { gameMaster } from './gamemaster.js';
+import { CardEffectManager } from "./cardEffect.js";
+
 const PLAY_TYPES_LIST = {
     SAME_RANK: 'same_rank',
     SAME_SUIT: 'same_suit',
     EMPEROR: 'emperor',
     FOURTEEN: 'fourteen',
+    TWENTY: 'twenty',
+    SPADE_THREE: 'spade_three',
     JOKER_ONLY: 'joker_only',
-    OTHER: 'other',
     CANNOT: 'cannot',
     START: 'start'
 };
 
 
-
-
-export class PlayType {
-    constructor(type, minCardNumber, cardCount, reverseStrength, restriction, suits) {
-        this.type = Array.isArray(type) ? type : [type]; // プレイタイプを配列として保存
-        this.minCardNumber = minCardNumber; // 最小のカード番号
-        this.cardCount = cardCount; // プレイ枚数
-        this.reverseStrength = reverseStrength; // プレイの強さを逆転させるか
-        this.restriction = restriction; // プレイの制限
-        this.suits = suits;
+export class Played{
+    constructor(cards){
+        if (cards===undefined){
+            this.setup();
+            return;
+        };
+        this.cards = cards;
+        this.suits = this.cards.map(card => card.suit);
+        this.minCardOrder = this.getMinCardOrder(this.cards);
+        this.maxCardOrder = this.getMaxCardOrder(this.cards);
+        this.cardCount = this.cards.length;
     }
-    resetPlayType(){
-        this.type = [
+
+    // 最初のターンのための初期化メソッド
+    setup(){
+        this.cards = [];
+        this.suits = [];
+        this.minCardOrder = 0;
+        this.maxCardOrder = 0;
+        this.cardCount = 0;
+        this.playType = [
             PLAY_TYPES_LIST.SAME_RANK,
             PLAY_TYPES_LIST.SAME_SUIT,
-            PLAY_TYPES_LIST.JOKER_ONLY,
             PLAY_TYPES_LIST.EMPEROR,
             PLAY_TYPES_LIST.FOURTEEN,
-            PLAY_TYPES_LIST.OTHER,
-            PLAY_TYPES_LIST.START];
-        this.minCardNumber = null;
-        this.cardCount = 0 ;
-        this.reverseStrength = false;
-        this.restriction = [];
-        this.suits = [];
+            PLAY_TYPES_LIST.TWENTY,
+            PLAY_TYPES_LIST.SPADE_THREE,
+            PLAY_TYPES_LIST.START
+        ];
     }
-    // 前回のプレイとの比較
-    canPlayAfter(previousPlayType) {
-        // 今回のプレイがCANNOTの場合は常にfalse
-        if (this.type.includes(PLAY_TYPES_LIST.CANNOT)) {
-            console.log("cannot play")
-            return false;
+
+    // プレイ可能かどうかを判定するメソッド 
+    checkPlayable(gameMaster, playableType){
+        this.gameMaster = gameMaster;
+        this.playableType = playableType;
+        this.previousPlayed   = this.gameMaster.playArea.playState.previousPlayed;
+        this.previousPlayType = this.gameMaster.playArea.playState.previousPlayed.playType;
+        const playType = [];
+        // playTypeがともにSAME_RANKを含む場合
+        if (this.playableType.includes(PLAY_TYPES_LIST.SAME_RANK) 
+            && this.previousPlayType.includes(PLAY_TYPES_LIST.SAME_RANK)) {
+
+            let conditions = [
+                this.checkCardCount(),        // カードの枚数が同じか確認
+                this.checkMinCardNumber(),    // カードの最小値の確認
+                this.checkSuitRestriction(),  // マーク縛りの確認
+                this.checkStairRestriction()  // 階段縛りの確認
+            ];
+
+            // 全ての条件が満たされている場合
+            if (conditions.every(condition => condition)) {
+                playType.push(PLAY_TYPES_LIST.SAME_RANK);
+            }
         }
 
-        // 最初のプレイの場合は常にtrue
-        if (previousPlayType.type.includes(PLAY_TYPES_LIST.START)) {
+        // playTypeがともにSAME_SUITを含む場合
+        if (this.playableType.includes(PLAY_TYPES_LIST.SAME_SUIT) 
+            && this.previousPlayType.includes(PLAY_TYPES_LIST.SAME_SUIT)) {
+            
+            let conditions = [
+                this.checkCardCount(),        // カードの枚数が同じか確認
+                this.checkMinCardNumber(),    // カードの最小値の確認
+                this.checkSuitRestriction(),  // マーク縛りの確認
+                this.checkStairRestriction()  // 階段縛りの確認
+            ];
+
+            // 全ての条件が満たされている場合
+            if (conditions.every(condition => condition)) {
+                playType.push(PLAY_TYPES_LIST.SAME_SUIT);
+            }
+        }
+
+        // playTypeがともにEMPERORを含む場合
+        if (this.playableType.includes(PLAY_TYPES_LIST.EMPEROR) 
+            && this.previousPlayType.includes(PLAY_TYPES_LIST.EMPEROR)) {
+            
+            let conditions = [
+                this.checkCardCount(),        // カードの枚数が同じか確認
+                this.checkMinCardNumber(),    // カードの最小値の確認
+                this.checkSuitRestriction(),  // マーク縛りの確認
+                this.checkStairRestriction()  // 階段縛りの確認
+            ];
+
+            // 全ての条件が満たされている場合
+            if (conditions.every(condition => condition)) {
+                playType.push(PLAY_TYPES_LIST.EMPEROR);
+            }
+        }
+
+        // playTypeがともにFOURTEENを含む場合
+        if (this.playableType.includes(PLAY_TYPES_LIST.FOURTEEN) 
+            && this.previousPlayType.includes(PLAY_TYPES_LIST.FOURTEEN)) {
+            
+            let conditions = [
+                this.checkCardCount(),        // カードの枚数が同じか確認
+                this.checkSuitRestriction(),  // マーク縛りの確認
+                this.checkFourteenWithElevenBack() // 11バックの確認
+            ];
+
+            // 全ての条件が満たされている場合
+            if (conditions.every(condition => condition)) {
+                playType.push(PLAY_TYPES_LIST.FOURTEEN);
+            }
+        }
+
+        // playTypeがTWENTYを含む場合
+        if (this.playableType.includes(PLAY_TYPES_LIST.TWENTY)){
+            let conditions = [
+                this.checkTwenty()
+            ];
+
+            // 全ての条件が満たされている場合
+            if (conditions.every(condition => condition)) {
+                playType.push(PLAY_TYPES_LIST.TWENTY);
+            }
+        }
+
+        // playTypeがSPADE_THREEを含む場合
+        if (this.playableType.includes(PLAY_TYPES_LIST.SPADE_THREE)){
+            let conditions = [
+                this.checkSpadeThree()
+            ];
+
+            // 全ての条件が満たされている場合
+            if (conditions.every(condition => condition)) {
+                playType.push(PLAY_TYPES_LIST.SPADE_THREE);
+            }
+        }
+
+        // playTypeがJOKER_ONLYを含む場合
+        if (this.playableType.includes(PLAY_TYPES_LIST.JOKER_ONLY)){
+            let conditions = [
+                this.checkCardCount(),        // カードの枚数が同じか確認
+            ];
+
+            // 全ての条件が満たされている場合
+            if (conditions.every(condition => condition)) {
+                playType.push(PLAY_TYPES_LIST.JOKER_ONLY);
+            }
+        }
+
+        this.playType = playType;
+        console.log("playType", playType);
+        return playType;
+    }
+
+    checkCardCount(){
+        if (this.previousPlayType.includes(PLAY_TYPES_LIST.START)) return true;
+        if (this.cardCount === this.previousPlayed.cardCount){
             return true;
-        }
-
-        // 1. 前回と同じプレイ枚数であるか
-        if (this.cardCount !== previousPlayType.cardCount) {
-            console.log("card count does not match")
+        } else {
+            console.log("card count failed");
             return false;
         }
+    }
 
-        // 2. 前回のプレイタイプと一致しているか
-        const previousTypes = Array.isArray(previousPlayType.type) ? previousPlayType.type : [previousPlayType.type];
-        const typeMatches = this.type.some(type => previousTypes.includes(type));
-        if (!typeMatches) {
-            console.log("type does not match")
-            return false;
+    checkMinCardNumber(){
+        if (this.previousPlayType.includes(PLAY_TYPES_LIST.START)) return true;        
+        if (this.gameMaster.playArea.playEffectRule.reverseStrength){
+            // 強さが逆転している場合
+            if (this.maxCardOrder < this.previousPlayed.maxCardOrder) return true;
+        } else {
+            // 強さが逆転していない場合
+            if (this.minCardOrder > this.previousPlayed.minCardOrder) return true;
         }
+        console.log("min card number failed");
+        return false;
+    }
 
-        // 2'.前回と今回のプレイタイプがFOURTEENの場合、最小の数字は判定が変更
-        if (this.type.includes(PLAY_TYPES_LIST.FOURTEEN) && previousTypes.includes(PLAY_TYPES_LIST.FOURTEEN)) {
-            return true;
-        } 
-        // 3. 前回の最小の数字より、今回の最小の数字の方が大きいか
-        if (this.compareCardNumbers(this.minCardNumber, previousPlayType.minCardNumber) <= 0){
-            
-            
-            console.log("min card number is not enough to play")
-            return false;
-        } 
+    // マーク縛りの確認 要実装
+    checkSuitRestriction(){
+        // 前回のプレイがスタートの場合はtrue
+        if (this.previousPlayType.includes(PLAY_TYPES_LIST.START)) return true;
+        
+        const suitsCount = this.gameMaster.playArea.playEffectRule.restrictionSuit.suitsCount;
+        let jokerCount = this.suits.filter(suit => suit === 'joker').length;
+        const previousSuits = this.previousPlayed.suits;
+        const havingSuits = this.suits.filter(suit => suit !== 'joker');
+        const restrictionSuits = [];
 
-        // 4.スート縛りを確認する
-        const restrictionSuits = previousPlayType.restriction;
+        console.log("suitsCount", suitsCount);
+        console.log("jokerCount", jokerCount);
+        console.log("previousSuits", previousSuits);
+        console.log("havingSuits", havingSuits);
+        
 
-        if (restrictionSuits && restrictionSuits.length > 0) {
-            let jokerCount = this.suits.filter(suit => suit === 'joker').length; // Jokerの残り数をトラッキング
-            let suitsCopy = [...this.suits]; // this.suitsをコピーして操作
-            let checkedSuits = []; // 一致したスートを格納
-            
-            // Jokerの数だけ未一致のスートを許容
-            for (const suit of restrictionSuits) {
-                let suitIndex = suitsCopy.indexOf(suit);
-                
-                if (suitIndex !== -1) {
-                    // スートが見つかったら、使ったスートを削除（1度のみ）
-                    suitsCopy.splice(suitIndex, 1);
-                    checkedSuits.push(suit);
-                } else if (jokerCount > 0) {
-                    // Jokerで不足を補う
-                    jokerCount--;
-                    checkedSuits.push(suit); // Jokerを使用したスートを記録
+        // 縛りがある場合は前回のプレイと比較
+        for (let suit in suitsCount) {
+            let count = suitsCount[suit];
+            for (let i = 0; i < count; i++) {
+                if (havingSuits.includes(suit)){
+                    havingSuits.splice(havingSuits.indexOf(suit), 1);
+                    previousSuits.splice(previousSuits.indexOf(suit), 1);
+                    restrictionSuits.push(suit);
+                } else if (jokerCount > 0){
+                    jokerCount -= 1;
+                    previousSuits.splice(previousSuits.indexOf(suit), 1);
+                    restrictionSuits.push(suit);
                 } else {
-                    // Jokerで補えない場合
-                    console.log("suit does not match");
+                    console.log(suit + " is not found in cards.");
                     return false;
                 }
-            }
-
-            // スート縛りを更新
-            this.suits = suitsCopy.concat(checkedSuits);
-        }
-
-        // 今回と前回のスートを比較し、一致しているものすべてを取得
-        let checkedSuits = [];
-        let suitsCopy = this.suits.filter(suit => suit !== 'joker');
-        for (const suit of previousPlayType.suits) {
-            let suitIndex = suitsCopy.indexOf(suit);
-            if (suitIndex !== -1) {
-                suitsCopy.splice(suitIndex, 1);
-                checkedSuits.push(suit);
+                console.log(suit);
             }
         }
 
-        this.restriction = checkedSuits;
+        // 新たな縛りがある場合は縛りを更新
+        for (let suit of previousSuits){
+            if (havingSuits.includes(suit)){
+                havingSuits.splice(havingSuits.indexOf(suit), 1);
+                restrictionSuits.push(suit);
+            }
+        }
+        console.log("restrictionSuits", restrictionSuits);
+        // restrictionSuits内の各suitの数をカウント
+        let new_suitsCount = {'spade': 0, 'heart': 0, 'diamond': 0, 'club': 0};
+        for (let suit of restrictionSuits){
+            new_suitsCount[suit] += 1;
+        }
+        // 更新した縛りを反映
+        this.gameMaster.playArea.playEffectRule.restrictionSuit.suitsCount = new_suitsCount;
+        this.gameMaster.playArea.playEffectRule.restrictionSuit.updateRestrictionSuits();
 
         return true;
-
     }
 
-    // playtypeを更新する
-    updatePreviousPlayType(previousPlayType) {
-        // 共通のプレイタイプを求める
-        const previousTypes = Array.isArray(previousPlayType.type) ? previousPlayType.type : [previousPlayType.type];
-        const currentTypes = Array.isArray(this.type) ? this.type : [this.type];
-        
-        // 両方に含まれるプレイタイプのみを抽出
-        const commonTypes = previousTypes.filter(type => currentTypes.includes(type));
-        
-        // previousPlayType の type を更新
-        console.log("縛りは" + this.restriction)
-        const updatedPreviousPlayType = new PlayType(commonTypes, this.minCardNumber, this.cardCount, this.reverseStrength, this.restriction, this.suits);
-        return updatedPreviousPlayType;
-    }
-
-    compareCardNumbers(number1, number2) {
-        const order = {
-            '3': 1, '4': 2, '5': 3, '6': 4, '7': 5, '8': 6, '9': 7, '10': 8, '11': 9, '12': 10, '13': 11, '1': 12, '2': 13, '14': 14
-        };
-
-        const rank1 = order[number1];
-        const rank2 = order[number2];
-
-        if (rank1 === rank2) {
-            return 0; // 同じ順位
-        } else if (rank1 > rank2) {
-            return 1; // number1 は number2 より大きい
-        } else {
-            return -1; // number1 は number2 より小さい
+    checkStairRestriction(){
+        if (this.previousPlayType.includes(PLAY_TYPES_LIST.START)) return true; 
+        // 階段縛りになるか確認
+        if (this.minCardOrder - this.previousPlayed.minCardOrder === 1){
+            this.gameMaster.playArea.playEffectRule.restrictionStair = true;
+            this.gameMaster.playArea.playEffectRule.updateIcons();
+            return true;
         }
-    }
-}
-
-export class PlayValidator {
-    constructor(Cards,gameMaster) {
-        this.cards = Cards; // Cards クラスのインスタンスを受け取る
-        this.gameMaster = gameMaster;
-    }
-    
-    // カードのランクでプレイタイプを判定
-    static isSameRank(cards, jokerCount) {
-        if (cards.length === 0){
-            if (jokerCount === 0) {
-                return false;
-            } else{
-                return true;
-            }
-        } 
-    
-        const firstNumber = cards.find(card => card.Suit !== 'joker').Number; // 最初のジョーカー以外のカードの番号を取得
-    
-        // ジョーカーは他のカードと同じランクとみなす
-        return cards.every(card => card.Number === firstNumber || card.Suit === 'joker');
+        if (this.gameMaster.playArea.playEffectRule.restrictionStair === false) return true;
+        //前回のminCardNumberと今回のminCardNumberを比較し１つ大きければtrue
+        return this.minCardNumber - this.previousPlayed.minCardNumber === 1;
     }
 
-    // カードのスートと連番でプレイタイプを判定
-    static isSameSuit(cards, jokerCount) {
-        if (cards.length+jokerCount < 3) {
+    checkFourteenWithElevenBack(){
+        if (this.gameMaster.playArea.playEffectRule.elevenActivated === false) return true;
+        if (this.minCardNumber < 11){
+            return true;
+        } else {
+            console.log("When eleven back is activated, you can't play fourteen with 11 or higher.");
             return false;
         }
+    }
 
-        // 最初のジョーカー以外のカードを基準にする
-        const suit = cards[0].Suit;
-        const order = {
-            '3': 1, '4': 2, '5': 3, '6': 4, '7': 5, '8': 6, '9': 7, '10': 8, '11': 9, '12': 10, '13': 11, '1': 12, '2': 13, 'joker': 14
-        };
+    checkTwenty(){
+        //今回のカードの合計値を計算
+        let total = 0;
+        for (const card of this.cards){
+            total += card.number;
+        }
+        if (total === 20){
+            return true;
+        } else if (this.previousPlayType.includes(PLAY_TYPES_LIST.TWENTY)){
+            //20からtotalの値を引いた数字のカードをthis.previousPlayed.cardsから探す
+            let searchNumber = 20 - total;
+            //this.previousPlayed.cardsから.numberがsearchNumberのカードを探す
+            console.log("searchNumber", searchNumber);
+            let searchCard = this.previousPlayed.cards.find(card => card.number === searchNumber);
+            console.log("searchCard", searchCard);
+            if (searchCard){
+                this.cards.push(searchCard);
+                return true;
+            } else {
+                console.log(searchNumber + " is not found in previous cards.");
+                return false;
+            }
+        } else {
+            console.log("The total number of cards is not 20.");
+            return false;
+        }
+    }
 
-        for (let i = 0; i < cards.length - 1; i++) {
-            const currentCard = cards[i];
-            const nextCard = cards[i + 1];
+    checkSpadeThree(){
+        // 前回がジョーカー１枚の場合はプレイ可能
+        if (!(this.previousPlayed.cardCount === 1 && this.previousPlayed.cards[0].suit === 'joker')) return false;
+        // 今回がスペード３一枚だけの場合はプレイ可能
+        if (this.cardCount === 1 && this.cards[0].suit === 'spade' && this.cards[0].number === 3) return true;
+    }
 
-            // スートが一致しているかの判定
-            if (currentCard.Suit !== suit || nextCard.Suit !== suit) return false;
-            
+    getMinCardOrder(cards){
+        return Math.min(...cards.map(card => card.order))
+    }
+
+    getMaxCardOrder(cards){
+        return Math.max(...cards.map(card => card.order))
+    }
+
+}
+
+// プレイ可能なカードタイプの配列を返すクラス
+class ReturnSelectedPlayableType{
+    constructor(cards){
+        this.cards = cards;
+        this.jokerCount = this.cards.filter(card => card.suit === 'joker').length;
+        this.nonJokerCards = this.cards.filter(card => card.suit !== 'joker');
+        this.jokerCards = this.cards.filter(card => card.suit === 'joker');
+        this.cardCount = this.cards.length;
+        this.playableType = [];
+    }
+
+    checkPlayableType(){
+        // 最低でも1枚以上のカードが必要
+        if (this.cardCount === 0){
+            this.playableType.push(PLAY_TYPES_LIST.CANNOT);
+            return;
+        }
+        // 同じランクのカードがあるかどうか
+        if (this.checkSameRank()){
+            this.playableType.push(PLAY_TYPES_LIST.SAME_RANK);
+        }
+        // 同じスートのカードがあるかどうか
+        if (this.checkSameSuit()){
+            this.playableType.push(PLAY_TYPES_LIST.SAME_SUIT);
+        }
+        // エンペラーがあるかどうか
+        if (this.checkEmperor()){
+            this.playableType.push(PLAY_TYPES_LIST.EMPEROR);
+        }
+        // 14があるかどうか
+        if (this.checkFourteen()){
+            this.playableType.push(PLAY_TYPES_LIST.FOURTEEN);
+        }
+        // 20があるかどうか
+        if (this.checkTwenty()){
+            this.playableType.push(PLAY_TYPES_LIST.TWENTY);
+        }
+        // スペード3単体かどうか
+        if (this.checkSpadeThree()){
+            this.playableType.push(PLAY_TYPES_LIST.SPADE_THREE);
+        }
+        // ジョーカーのみかどうか
+        if (this.checkJokerOnly()){
+            this.playableType.push(PLAY_TYPES_LIST.JOKER_ONLY);
+        }
+    }
+
+    getPlayableType(){
+        return this.playableType;
+    }
+
+    checkSameRank(){
+        if (this.nonJokerCards.length === 0 && this.jokerCount > 0) return true;
+        // 最初のカードの .number を基準とする
+        const firstNumber = this.nonJokerCards[0].number;
+        // すべてのカードの .number が最初のカードと一致するか確認
+        return this.nonJokerCards.every(card => card.number === firstNumber);
+    }
+
+    checkSameSuit(){
+        // 最低でも3枚以上のカードが必要
+        if (this.cardCount < 3) return false;
+        // 最初のカードの .suit を基準とする
+        const firstSuit = this.nonJokerCards[0].suit;
+        // すべてのカードの .suit が最初のカードと一致するか確認
+        if (!this.nonJokerCards.every(card => card.suit === firstSuit)) return false;
+        // ジョーカーを使って連番になっているか確認
+        const order = {'3': 1, '4': 2, '5': 3, '6': 4, '7': 5, '8': 6, '9': 7, '10': 8, '11': 9, '12': 10, '13': 11, '1': 12, '2': 13};
+        for (let i = 0; i < this.nonJokerCards.length - 1; i++) {
             // 連番の判定
-            const currentOrder = order[currentCard.Number];
-            const nextOrder = order[nextCard.Number];
+            const currentOrder = order[this.nonJokerCards[i].number];
+            const nextOrder = order[this.nonJokerCards[i+1].number];
             const gap = nextOrder - currentOrder - 1;
+            let usableJokerCount = this.jokerCount;
 
             if (gap > 0) {
-                if (gap <= jokerCount) {
-                    jokerCount -= gap; // 必要なジョーカーの数だけ減らす
+                if (gap <= usableJokerCount) {
+                    usableJokerCount -= gap; // 必要なジョーカーの数だけ減らす
                 } else {
                     return false; // 連番の補完に必要なジョーカーが足りない場合
                 }
             }
         }
-
         return true;
     }
 
-    // カードがエンペラーで構成されるかを判定
-    static isEmperor(cards, jokerCount = 0) {
-        if (cards.length+jokerCount !== 4) {
-            return false; // 4枚でなければエンペラーではない
-        }
+    checkEmperor(){
+        // エンペラーが含まれているか確認
+        if (this.cards.length !== 4) return false; // 4枚でなければエンペラーではない
 
         // カードのスートを追跡するセットを作成
         const suits = new Set();
@@ -229,155 +403,94 @@ export class PlayValidator {
         const ranks = [];
 
         // 各カードのスートと数字を確認
-        for (const card of cards) {
-            suits.add(card.Suit); // スートを追加
-            ranks.push(card.Number); // 数字を追加
+        for (const card of this.nonJokerCards) {
+            suits.add(card.suit); // スートを追加
+            ranks.push(card.number); // 数字を追加
             }
 
         // スートが4つ（ジョーカーが補完している場合も含む）かどうかを確認
-        if (suits.size + jokerCount < 4) {
-            console.log("suits.size is " + suits.size + " jokerCount is " + jokerCount)
+        if (suits.size + this.jokerCount < 4) {
             return false; // 4つの異なるスートがない場合はエンペラーではない
         }
 
-        // 連続する数字かどうかを確認
-        for (let i = 1; i < ranks.length; i++) {
-            const difference = ranks[i] - ranks[i - 1];
-            if (difference > 1) {
-                jokerCount -= (difference - 1);
-            }
-            if (jokerCount < 0) {
-                console.log("not enough joker")
-                return false; // ジョーカーが足りず、連番が完成しない場合
+        // ジョーカーを使って連番になっているか確認
+        const order = {'3': 1, '4': 2, '5': 3, '6': 4, '7': 5, '8': 6, '9': 7, '10': 8, '11': 9, '12': 10, '13': 11, '1': 12, '2': 13};
+        for (let i = 0; i < this.nonJokerCards.length - 1; i++) {
+            // 連番の判定
+            const currentOrder = order[this.nonJokerCards[i].number];
+            const nextOrder = order[this.nonJokerCards[i+1].number];
+            const gap = nextOrder - currentOrder - 1;
+            const usableJokerCount = this.jokerCount;
+            if (gap > 0) {
+                if (gap <= usableJokerCount) {
+                    usableJokerCount -= gap; // 必要なジョーカーの数だけ減らす
+                } else {
+                    return false; // 連番の補完に必要なジョーカーが足りない場合
+                }
             }
         }
 
         return true; // 条件をすべて満たしている場合
     }
 
-    // カードがジョーカーのみで構成されるかを判定
-    static isJokerOnly(cards, jokerCount) {
-        return cards.length === 0 && jokerCount > 0;
+    checkFourteen(){
+        if (this.cardCount !== 2) return false; // 2枚でなければ14ではない
+        if (this.jokerCount > 0) return true; // ジョーカーがあれば14
+        // 2枚のカードの数字の合計が14かどうか確認
+        return this.nonJokerCards[0].number + this.nonJokerCards[1].number === 14;
     }
 
-    // カードの数字の合計が14で構成されるかを判定
-    static isFOURTEEN(cards, jokerCount) {
-        if (cards.length+jokerCount !== 2) {
-            return false; // 2枚でなければ14ではない
-        }
-        if (jokerCount>=1) return true; // ジョーカーがあれば14
-
-        // カードの数字の合計が14かどうかを確認
-        const sum = cards.reduce((acc, card) => acc + card.Number, 0);
-        return sum === 14;
+    checkTwenty(){
+        if (this.jokerCount > 0) return false; // ジョーカーがあれば20ではない
+        // 数字が3,4,5,1であるカードの数字の合計が20かどうか確認
+        const numbers = this.nonJokerCards.map(card => card.number);
+        const targetNumbers = [3, 4, 5, 1];
+        const filteredNumbers = numbers.filter(num => targetNumbers.includes(num));
+        const sum = filteredNumbers.reduce((acc, cur) => acc + cur, 0);
+        //合計が15,16,17,19,20のいずれかであればtrue
+        return [15, 16, 17, 19, 20].includes(sum);
     }
 
-    // プレイタイプを判定し、PlayTypeクラスのインスタンスを返す
-    returnPlayType() {
-        if (this.cards.length === 0) {
-            return new PlayType([PLAY_TYPES_LIST.CANNOT], null, this.cards.length, false, [], []);
-        }
-        const playTypes = [];
-        const minCardNumber = this.cards[0].Number;
-        const jokerCount = this.cards.filter(card => card.Suit === 'joker').length;
-        const nonJokerCards = this.cards.filter(card => card.Suit !== 'joker');
-
-
-
-        if (PlayValidator.isSameRank(nonJokerCards,jokerCount)) {
-            playTypes.push(PLAY_TYPES_LIST.SAME_RANK);
-        }
-
-        if (PlayValidator.isSameSuit(nonJokerCards,jokerCount)) {
-            playTypes.push(PLAY_TYPES_LIST.SAME_SUIT);
-        }
-
-        if (PlayValidator.isJokerOnly(nonJokerCards,jokerCount)) {
-            playTypes.push(PLAY_TYPES_LIST.JOKER_ONLY);
-        }
-
-        if (PlayValidator.isEmperor(nonJokerCards,jokerCount)) {
-            playTypes.push(PLAY_TYPES_LIST.EMPEROR);
-        }
-
-        if (PlayValidator.isFOURTEEN(nonJokerCards,jokerCount)) {
-            playTypes.push(PLAY_TYPES_LIST.FOURTEEN);
-        }
-
-        if (playTypes.length === 0) {
-            return new PlayType([PLAY_TYPES_LIST.CANNOT], null, this.cards.length, false, [], []);
-        }
-        // スートを取得(jokerは含めない)
-        const suits = this.cards.map(card => card.Suit);
-        console.log("suits are " + suits)
-        return new PlayType(playTypes, minCardNumber, this.cards.length, false, [], suits);
+    checkSpadeThree(){
+        if (this.jokerCount > 0) return false; // ジョーカーがあればスペード3ではない
+        // スペード3単体であるかどうか確認
+        if (this.cardCount !== 1) return false; // 1枚でなければスペード3ではない
+        return this.nonJokerCards[0].suit === 'spade' && this.nonJokerCards[0].number === 3;
     }
-    
 
-    canPlay(currentPlayType, playerId) {
-        // 前回のプレイと比較
-        if (!currentPlayType.canPlayAfter(this.gameMaster.playArea.playState.previousPlayType)) {
-            return false;
-        }
-        // ターンプレイヤーの確認
-        // const turnPlayer = this.gameBoard.getTurnPlayerId();
-        // if (playerId !== turnPlayer) {
-        //     return false;
-        // }
-
-        // プレイ可能であるときの処理
-        return true;
+    checkJokerOnly(){
+        if (this.jokerCount === this.cardCount) return true;
     }
 }
 
-export async function handlePlay(playerId,gameMaster) {
-    const hand = gameMaster.getPlayerHand(playerId);
-    const playedCard = gameMaster.playArea.playedCard;
-    const selectedCards = hand.getSelectedCards();
-    const validator = new PlayValidator(selectedCards,gameMaster);
-    const currentPlayType = validator.returnPlayType();
-    
-    if (validator.canPlay(currentPlayType, playerId)) {
+// プレイを実行する関数
+export async function handlePlay(gameMaster){
+    const cards = gameMaster.player[gameMaster.playArea.playState.turnPlayerId].hand.getSelectedCards();
+    const selectedPlayableType = new ReturnSelectedPlayableType(cards);
+    selectedPlayableType.checkPlayableType();
+    const playableType = selectedPlayableType.getPlayableType();
+    const played = new Played(cards);
+    const playType = played.checkPlayable(gameMaster, playableType);
+    if (playType.length > 0){
+    // プレイ可能な場合の処理
         // カードをプレイエリアに移動するロジック
-        hand.playSelectedCards(gameMaster, playedCard);
-
-        if (hand.Cards.length === 0) {
-            gameMaster.declareWinner(playerId);
-            return;
-        }
+        const hand = gameMaster.player[gameMaster.playArea.playState.turnPlayerId].hand;
+        hand.playSelectedCards(gameMaster);
+        // previousPlayedを更新
+        gameMaster.playArea.playState.previousPlayed = played;
+        console.log("previousPlayed", gameMaster.playArea.playState.previousPlayed.cards);
         // カード効果を実行
         const cardEffectManager = new CardEffectManager(gameMaster);
-        const pendingEffectCards = playedCard.getPendingEffectCards();
-        // gameBoard.updatePlayState(`${playerId}-select`);
-        // toDo
         await cardEffectManager.applyEffect();
+        // 組カード効果を実行
+        if (!playType.includes(PLAY_TYPES_LIST.TWENTY)){
+            await cardEffectManager.applyCombinationEffect();
+        }
         gameMaster.updateAllCounts();
-
-        // 縛り状態を表示
-        gameMaster.playArea.playEffectRule.restriction.clearCards();
-        console.log("currentPlayType.restriction is " + currentPlayType.restriction)
-        if (currentPlayType.restriction.length > 0) {
-            for (let i = 0; i < currentPlayType.restriction.length; i++) {
-                const suit = currentPlayType.restriction[i];
-                console.log(suit)
-                const suitCard = new Card(suit,0,gameMaster.playArea.playEffectRule.restriction.parentElement);
-                suitCard.element.setAttribute('class', 'suitCard');
-                gameMaster.playArea.playEffectRule.restriction.addCard(suitCard);
-            };
-            gameMaster.playArea.playEffectRule.restriction.updateCardVisual();
-        };
-
-        // カード効果の適用後、エフェクト待ち状態のカードを通常状態に戻す
-        selectedCards.forEach(card => {
-            card.element.classList.remove('pendingEffect');
-        });
-        // previousPlayTypeを更新
-        const updatedPreviousPlayType = currentPlayType.updatePreviousPlayType(gameMaster.playArea.playState.previousPlayType);
-        gameMaster.playArea.playState.previousPlayType = updatedPreviousPlayType;
-        // ターンプレイヤーを切り替える
-        // gameMaster.updateTurnInfo();
+        // ゲームマスターのターン情報を更新
         gameMaster.updateTurn();
     } else {
-        alert('選択されたカードはプレイできません');
+    // プレイ不可能な場合の処理
+        console.log("You can't play these cards.");
     }
 }
