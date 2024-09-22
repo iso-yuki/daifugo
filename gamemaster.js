@@ -15,11 +15,11 @@ class GameMaster {
 
     //各プレイヤーにカードを配るメソッド
     dealCards() {
-        const player1Cards = this.playArea.deck.deal(20);
+        const player1Cards = this.playArea.deck.deal(15);
         player1Cards.forEach(card => this.player[1].hand.addCard(card));
         this.player[1].hand.sortCards();
 
-        const player2Cards = this.playArea.deck.deal(20);
+        const player2Cards = this.playArea.deck.deal(15);
         player2Cards.forEach(card => this.player[2].hand.addCard(card));
         this.player[2].hand.sortCards();
     }

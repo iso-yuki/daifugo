@@ -194,6 +194,7 @@ class RestrictionSuits {
     }
     updateRestrictionSuits() {
         this.suits.forEach((suit, index) => {
+            console.log(suit);
             this.suitElements[index].querySelector('.restriction-suit-count').textContent = this.getRestrictionSuitCount(suit);
         });
     }

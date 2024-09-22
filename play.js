@@ -24,6 +24,8 @@ export class Played{
         this.minCardOrder = this.getMinCardOrder(this.cards);
         this.maxCardOrder = this.getMaxCardOrder(this.cards);
         this.cardCount = this.cards.length;
+        this.restrictionStair = false;
+        this.new_suitsCount = { 'spade': 0, 'heart': 0, 'diamond': 0, 'club': 0 };
     }
 
     // 最初のターンのための初期化メソッド
@@ -184,7 +186,9 @@ export class Played{
 
     // マーク縛りの確認 要実装
     checkSuitRestriction(){
+
         // 前回のプレイがスタートの場合はtrue
+        
         if (this.previousPlayType.includes(PLAY_TYPES_LIST.START)) return true;
         
         const suitsCount = this.gameMaster.playArea.playEffectRule.restrictionSuit.suitsCount;
@@ -228,23 +232,19 @@ export class Played{
         }
         console.log("restrictionSuits", restrictionSuits);
         // restrictionSuits内の各suitの数をカウント
-        let new_suitsCount = {'spade': 0, 'heart': 0, 'diamond': 0, 'club': 0};
         for (let suit of restrictionSuits){
-            new_suitsCount[suit] += 1;
+            this.new_suitsCount[suit] += 1;
         }
-        // 更新した縛りを反映
-        this.gameMaster.playArea.playEffectRule.restrictionSuit.suitsCount = new_suitsCount;
-        this.gameMaster.playArea.playEffectRule.restrictionSuit.updateRestrictionSuits();
 
         return true;
     }
 
     checkStairRestriction(){
+        
         if (this.previousPlayType.includes(PLAY_TYPES_LIST.START)) return true; 
         // 階段縛りになるか確認
         if (this.minCardOrder - this.previousPlayed.minCardOrder === 1){
-            this.gameMaster.playArea.playEffectRule.restrictionStair = true;
-            this.gameMaster.playArea.playEffectRule.updateIcons();
+            this.restrictionStair = true;   
             return true;
         }
         if (this.gameMaster.playArea.playEffectRule.restrictionStair === false) return true;
@@ -478,6 +478,10 @@ export async function handlePlay(gameMaster){
         hand.playSelectedCards(gameMaster);
         // previousPlayedを更新
         gameMaster.playArea.playState.previousPlayed = played;
+        gameMaster.playArea.playEffectRule.restrictionSuit.suitsCount = played.new_suitsCount;
+        gameMaster.playArea.playEffectRule.restrictionStair = played.restrictionStair;
+        gameMaster.playArea.playEffectRule.updateIcons();
+        gameMaster.playArea.playEffectRule.restrictionSuit.updateRestrictionSuits();
         console.log("previousPlayed", gameMaster.playArea.playState.previousPlayed.cards);
         // カード効果を実行
         const cardEffectManager = new CardEffectManager(gameMaster);
