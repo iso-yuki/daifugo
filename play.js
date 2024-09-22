@@ -420,7 +420,7 @@ class ReturnSelectedPlayableType{
             const currentOrder = order[this.nonJokerCards[i].number];
             const nextOrder = order[this.nonJokerCards[i+1].number];
             const gap = nextOrder - currentOrder - 1;
-            const usableJokerCount = this.jokerCount;
+            let usableJokerCount = this.jokerCount;
             if (gap > 0) {
                 if (gap <= usableJokerCount) {
                     usableJokerCount -= gap; // 必要なジョーカーの数だけ減らす
